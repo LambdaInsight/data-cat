@@ -1,0 +1,56 @@
+{
+  "eu-central-1": {
+    "dev": {
+      "etcd": {
+        "created_at": ""
+      },
+      "hadoop": {
+        "created_at": ""
+      }
+    }
+  },
+  "eu-west-1": {
+    "dev": {
+      "etcd": {
+        "created_at": ""
+      },
+      "hadoop": {
+        "created_at": ""
+      }
+    },
+    "prod": {
+      "etcd": {
+        "created_at": ""
+      },
+      "hadoop": {
+        "created_at": ""
+      }
+    },
+    "qa": {
+      "etcd": {
+        "created_at": ""
+      },
+      "hadoop": {
+        "created_at": ""
+      }
+    }
+  },
+  "us-east-1": {
+    "dev": {
+      "etcd": {
+        "created_at": ""
+      },
+      "hadoop": {
+        "created_at": ""
+      }
+    },
+    "qa": {
+      "etcd": {
+        "created_at": ""
+      },
+      "hadoop": {
+        "created_at": ""
+      }
+    }
+  }
+}
