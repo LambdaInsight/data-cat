@@ -1,0 +1,10 @@
+title = "data-cat"
+
+[owner]
+name = "Istvan Szukacs <istvan@lambdainsight.com>"
+dob = 2019-11-04T05:43:22Z
+
+[main]
+log_pattern = '%(asctime)s %(levelname)-4s %(message)s'
+log_folder = 'logs'
+log_date_fmt = '%Y-%m-%d %H:%M:%S'

@@ -1,3 +1,4 @@
 .pass
 logs/
 .vscode/
+venv/

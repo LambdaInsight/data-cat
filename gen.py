@@ -1,8 +1,8 @@
 #!/usr/bin/env python
-import json
+import yaml
 import os, sys
 
-with open('infrastructure.json', 'r') as read_file: infra = json.load(read_file)
+with open('infrastructure.yaml', 'r') as read_file: infra = yaml.load(read_file, Loader=yaml.FullLoader)
 
 regions = infra.keys()
 for region in regions:

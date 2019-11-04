@@ -171,6 +171,15 @@ For all of these above to work together nicely there is a dependency on tags bei
 
 ## Deployment
 
+I gave up on Conda and now just using venv from Python.
+
+```Bash
+/usr/local/opt/python3/bin/python3 -m venv venv
+. venv/bin/activate.fish #or the shell you are using
+pip install --upgrade pip
+pip install --upgrade toml pyyaml
+```
+
 ### Deploying monitors
 
 Deploying a whole stage:
