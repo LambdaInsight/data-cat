@@ -1,0 +1,27 @@
+---
+name: High CPU load on application_name:{application_name} stage:{stage} {{{{host.name}}}} / {{{{host.ip}}}}
+tags:
+  - application_name:{application_name}
+  - stage:{stage}
+  - region:{region}
+type: metric alert
+query: avg(last_5m):avg:system.load.norm.5{{application_name:{application_name},stage:{stage}}} by {{host}} > {critical_threshold}
+message: >-2
+  High CPU load on application_name:{application_name} stage:{stage} {{{{host.name}}}} / {{{{host.ip}}}} for 5 consecutive minutes on this node.
+  Url: https://wd-global-prod.datadoghq.com/monitors/{monitor_id}
+  {slack_notification_channel}
+monitor_options:
+  notify_audit: False
+  locked: False
+  timeout_h: 0
+  silenced: {{}}
+  include_tags: True
+  require_full_window: True
+  new_host_delay: 300
+  notify_no_data: False
+  renotify_interval: 0
+  escalation_message: >-2
+    CPU load is still damn high.
+  thresholds:
+    critical: {critical_threshold}
+    warning: {warning_threshold}
