@@ -32,21 +32,21 @@ A service that provides a distinct business functionality.
 
 3 files represent the DataDog configuration for the whole infrastructure.
 
-- infrastructure.json
+- infrastructure.yaml
 
 It contains the logical grouping of applications into stages and regions. The relations are always N:M. 1 region can contain many stages and many applications in each stage.
 
-- defaults.json
+- defaults.yaml
 
 Defaults for a certain stage.
 
-- application.json
+- application.yaml
 
 Configuration that is specific for a certain region, stage, application triplet.
 
-### Generating infrastructure.json
+### Generating infrastructure.yaml
 
-I recently discovered [Dhall](https://dhall-lang.org) that seems like the perfect fit to write the infrastructure in and than generate the JSON files.
+I recently discovered [Dhall](https://dhall-lang.org) that seems like the perfect fit to write the infrastructure in and than generate the YAML files.
 
 The type safe definitions looks like the following:
 
@@ -102,10 +102,10 @@ in  [ awsRegion AwsRegion.us-east-1
     ]
 ```
 
-Generating the JSON:
+Generating the YAML:
 
 ```bash
-dhall-to-json --file infrastructure.dhall > infrastructure.json
+dhall-to-yaml --file infrastructure.dhall > infrastructure.yaml
 ```
 
 ### Generating the folder structure
