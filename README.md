@@ -30,19 +30,23 @@ A service that provides a distinct business functionality.
 
 ## Implementation
 
-3 files represent the DataDog configuration for the whole infrastructure.
+4 files represent the DataDog configuration for the whole infrastructure.
 
 - infrastructure.yaml
 
 It contains the logical grouping of applications into stages and regions. The relations are always N:M. 1 region can contain many stages and many applications in each stage.
 
-- defaults.yaml
+- region.yaml
 
-Defaults for a certain stage.
+Defaults for a certain region (region).
+
+- stage.yaml
+
+Defaults for a certain stage (region, stage).
 
 - application.yaml
 
-Configuration that is specific for a certain region, stage, application triplet.
+Configuration that is specific for a certain application (region, stage, application).
 
 ### Generating infrastructure.yaml
 
@@ -207,6 +211,22 @@ Deploying a single application:
 ```bash
 ./data-cat/data-cat.py deploy-dashboards -r eu-west-1 -s qa -a etcd
 ```
+## What to monitor
+
+Following [Brendan Gregg's use method](http://www.brendangregg.com/usemethod.html) and the suggested things to monitor:
+
+- CPUs: sockets, cores, hardware threads (virtual CPUs)
+- Memory: capacity
+- Network interfaces
+- Storage devices: I/O, capacity
+- Controllers: storage, network cards
+- Interconnects: CPUs, memory, I/O
+
+How to monitor it (examples):
+
+- utilization: as a percent over a time interval. eg, "one disk is running at 90% utilization"
+- saturation: as a queue length. eg, "the CPUs have an average run queue length of four"
+- errors: scalar counts. eg, "this network interface has had fifty late collisions"
 
 ## About Us
 

@@ -26,6 +26,10 @@ class AwsElbMonitors(Monitors):
     def create_monitor(self):
         logging.info('Creating AWS ELB monitors')
 
+#############################################################################
+################################# main ######################################
+#############################################################################
+
 def deploy_monitors(args, config):
     system_monitors = SystemMonitors(args, config)
     system_monitors.create_monitor()
