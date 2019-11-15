@@ -58,8 +58,11 @@ def deploy_monitors(args, config):
         applications_to_be_deployed = args.application
     else:
         path = os.path.join('infra', args.region, args.stage)
-        #with open("welcome.txt") as file: # Use file to refer to the file object data = file.read()
-        applications_to_be_deployed =
+        for dir in os.listdir(path):
+            application_dir = os.path.join(path, dir)
+            if os.path.isdir(application_dir):
+                with open(os.path.join(application_dir, 'application.yaml')) as file:
+                    print(file.read())
 
 def deploy_dashboards(args, config):
     pass
