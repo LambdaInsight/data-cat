@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+from functools import reduce
 import json
 import logging
 import os
@@ -12,8 +13,8 @@ class Monitors:
     def __init__(self, args, config):
         self.args = args
         self.config = config
-        logging.debug('Args: %s Config: %s', args, config)
-    
+        logging.info('Args: %s Config: %s', args, config)
+
     def create_monitor(self):
         pass
 
@@ -21,7 +22,7 @@ class SystemMonitors(Monitors):
     def create_monitor(self):
         logging.info('Creating system monitors')
 
-        
+
 class AwsElbMonitors(Monitors):
     def create_monitor(self):
         logging.info('Creating AWS ELB monitors')
@@ -30,12 +31,35 @@ class AwsElbMonitors(Monitors):
 ################################# main ######################################
 #############################################################################
 
+def str_to_class(classname):
+    return getattr(sys.modules[__name__], classname)
+
 def deploy_monitors(args, config):
-    system_monitors = SystemMonitors(args, config)
-    system_monitors.create_monitor()
-    aws_elb_monitors = AwsElbMonitors(args, config)
-    aws_elb_monitors.create_monitor()
-    pass
+    monitor_types = config.get('monitor-types', {})
+    if monitor_types.get(args.monitor_type, None):
+        logging.info('Monitor type: {monitor_type} is found in the config.'.format(monitor_type=args.monitor_type))
+    else:
+        logging.error('Monitor type is not found in the config.')
+        exit(1)
+
+    monitor_types_to_be_deployed = []
+    if args.monitor_type == 'all':
+        monitor_types.pop('all', None)
+        monitor_types_to_be_deployed = list(monitor_types.values())
+    else:
+        monitor_types_to_be_deployed.append(monitor_types.get(args.monitor_type, None))
+
+    for monitor in monitor_types_to_be_deployed:
+        cls = str_to_class(monitor)
+        cls(args,config)
+
+    applications_to_be_deployed = []
+    if args.application:
+        applications_to_be_deployed = args.application
+    else:
+        path = os.path.join('infra', args.region, args.stage)
+        #with open("welcome.txt") as file: # Use file to refer to the file object data = file.read()
+        applications_to_be_deployed =
 
 def deploy_dashboards(args, config):
     pass
@@ -70,21 +94,29 @@ def main():
             format=config.get('main', {}).get('log_pattern', '%(asctime)s %(levelname)-4s %(message)s'),
             datefmt=config.get('main', {}).get('log_date_fmt', '%Y-%m-%d %H:%M:%S'),
             handlers=log_handlers)
-      
+
         parser = argparse.ArgumentParser(prog='data-cat')
         subparsers = parser.add_subparsers()
 
-        deploy_monitors     = subparsers.add_parser('deploy-monitors')
+        deploy_monitors = subparsers.add_parser('deploy-monitors')
         deploy_monitors.add_argument('-r', '--region', action='store', required=True)
         deploy_monitors.add_argument('-s', '--stage', action='store', required=True)
         deploy_monitors.add_argument('-a', '--application', action='store', required=False)
+        deploy_monitors.add_argument('-m', '--monitor-type', action='store', required=False)
         deploy_monitors.add_argument_group('deploy-monitors', '')
         deploy_monitors.set_defaults(func='deploy-monitors')
 
+        deploy_dashboards = subparsers.add_parser('deploy-dashboards')
+        deploy_dashboards.add_argument('-r', '--region', action='store', required=True)
+        deploy_dashboards.add_argument('-s', '--stage', action='store', required=True)
+        deploy_dashboards.add_argument('-a', '--application', action='store', required=False)
+        deploy_dashboards.add_argument_group('deploy-dashboards', '')
+        deploy_dashboards.set_defaults(func='deploy-dashboards')
+
         args = parser.parse_args()
-        
+
         logging.info('ARGS: %s', args)
-        
+
         if not any(vars(args).values()):
             logging.error("No parameter were passed")
             parser.print_help()
