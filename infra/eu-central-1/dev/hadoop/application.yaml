@@ -1,3 +1,10 @@
 ---
-system_monitors: 'stage'
+system_monitors_location: 'stage'
 system_monitors_config:
+
+aws_elb_monitors_location: 'application'
+aws_elb_monitors: 
+  - test
+aws_elb_monitors_configs: 
+  test:
+    a: 1

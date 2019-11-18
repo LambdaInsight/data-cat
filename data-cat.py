@@ -7,6 +7,7 @@ import logging
 import os
 import sys
 import toml
+import yaml
 from datetime import date, datetime, timedelta
 
 class Monitors:
@@ -46,11 +47,21 @@ class AwsElbMonitors(Monitors):
 ################################# main ######################################
 #############################################################################
 
+def safe_load_yaml(file_name):
+    try:
+        with open(file_name) as file:
+            data = yaml.safe_load(file)
+        return (True, data)
+    except Exception as e:
+        logging.error('Cannot load file: {} because of {}'.format(file_name, e))
+        return (False, '')
+    
 def str_to_class(classname):
     return getattr(sys.modules[__name__], classname)
 
 def deploy_monitors(args, config):
     monitor_types = config.get('monitor-types', {})
+      
     if monitor_types.get(args.monitor_type, None):
         logging.info('Monitor type: {monitor_type} is found in the config.'.format(
             monitor_type=args.monitor_type))
@@ -61,9 +72,9 @@ def deploy_monitors(args, config):
     monitor_types_to_be_deployed = []
     if args.monitor_type == 'all':
         monitor_types.pop('all', None)
-        monitor_types_to_be_deployed = list(monitor_types.values())
+        monitor_types_to_be_deployed = list(monitor_types.keys())
     else:
-        monitor_types_to_be_deployed.append(monitor_types.get(args.monitor_type, None))
+        monitor_types_to_be_deployed.append(args.monitor_type)
 
     applications_to_be_deployed = []
     if args.application:
@@ -75,12 +86,43 @@ def deploy_monitors(args, config):
             if os.path.isdir(application_dir):
                 applications_to_be_deployed.append(dir)
 
-    # Iterating over the applications and the monitors
+    region_path = os.path.join('infra', args.region, 'region.yaml')
+    load_region_config = safe_load_yaml(region_path)
+    if load_region_config[0]:
+        region_config = load_region_config[1]
+    else:
+        logging.error('Could not load region.yaml')
+
+    stage_path = os.path.join('infra', args.region, args.stage, 'stage.yaml')
+    load_stage_config = safe_load_yaml(stage_path)
+    if load_stage_config[0]:
+        stage_config = load_stage_config[1]
+    else:
+        logging.error('Could not load stage.yaml')
+  
     for application in applications_to_be_deployed:
+        application_path = os.path.join('infra', args.region, args.stage, application, 'application.yaml')
+        load_yaml_maybe = safe_load_yaml(application_path)
+        if load_yaml_maybe[0]:
+            application_config = load_yaml_maybe[1]
+        else:
+            logging.error('Could not load application.yaml')
+            break
         for monitor in monitor_types_to_be_deployed:
             logging.info('{} {} {} {}'.format(args.region, args.stage, application, monitor))
-            cls = str_to_class(monitor)
-            cls(args,config).create_monitor()
+            monitor_config_location_maybe = application_config.get(monitor, None)
+            if monitor_config_location_maybe:
+                logging.info(monitor_config_location_maybe)
+                if monitor_config_location_maybe == 'region':
+                    region_config.get(monitor, None)
+                elif monitor_config_location_maybe == 'stage':
+                    stage_config.get(monitor, None)
+                elif monitor_config_location_maybe == 'application':
+                    application_config.get(monitor, None)
+            else:
+                logging.error('Monitoring config {} cannot be found'.format(monitor))
+            # cls = str_to_class(monitor)
+            # cls(args,config).create_monitor()
 
 
 def deploy_dashboards(args, config):
