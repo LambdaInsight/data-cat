@@ -10,10 +10,25 @@ import toml
 from datetime import date, datetime, timedelta
 
 class Monitors:
+    def __load_datadog_credentials(self):
+        try:
+            with open('datadog.credentials') as file:
+                creds = file.read()
+            return (True, creds)
+        except Exception as e:
+            logging.error(e)
+            return (False, '')
+
     def __init__(self, args, config):
         self.args = args
         self.config = config
-        logging.info('Args: %s Config: %s', args, config)
+        credentials_maybe = self.__load_datadog_credentials()
+        if credentials_maybe[0]:
+            self.datadog_credentials = credentials_maybe[1]
+        else:
+            logging.error('Datadog credentials cannot be loaded')
+            exit(1)
+        logging.debug('Args: %s Config: %s', args, config)
 
     def create_monitor(self):
         pass
@@ -37,7 +52,8 @@ def str_to_class(classname):
 def deploy_monitors(args, config):
     monitor_types = config.get('monitor-types', {})
     if monitor_types.get(args.monitor_type, None):
-        logging.info('Monitor type: {monitor_type} is found in the config.'.format(monitor_type=args.monitor_type))
+        logging.info('Monitor type: {monitor_type} is found in the config.'.format(
+            monitor_type=args.monitor_type))
     else:
         logging.error('Monitor type is not found in the config.')
         exit(1)
@@ -49,20 +65,23 @@ def deploy_monitors(args, config):
     else:
         monitor_types_to_be_deployed.append(monitor_types.get(args.monitor_type, None))
 
-    for monitor in monitor_types_to_be_deployed:
-        cls = str_to_class(monitor)
-        cls(args,config)
-
     applications_to_be_deployed = []
     if args.application:
-        applications_to_be_deployed = args.application
+        applications_to_be_deployed.append(args.application)
     else:
         path = os.path.join('infra', args.region, args.stage)
         for dir in os.listdir(path):
             application_dir = os.path.join(path, dir)
             if os.path.isdir(application_dir):
-                with open(os.path.join(application_dir, 'application.yaml')) as file:
-                    print(file.read())
+                applications_to_be_deployed.append(dir)
+
+    # Iterating over the applications and the monitors
+    for application in applications_to_be_deployed:
+        for monitor in monitor_types_to_be_deployed:
+            logging.info('{} {} {} {}'.format(args.region, args.stage, application, monitor))
+            cls = str_to_class(monitor)
+            cls(args,config).create_monitor()
+
 
 def deploy_dashboards(args, config):
     pass
