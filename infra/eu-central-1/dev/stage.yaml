@@ -1,7 +1,0 @@
----
-system_monitors_list: 
-  - cpu.load.high
-system_monitors_configs: 
-  cpu.load.high:
-    critical_threshold: 0.8
-    warning_threshold: 0.8
