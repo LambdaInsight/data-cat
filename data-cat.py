@@ -22,11 +22,14 @@ class Monitors:
             return (False, '')
 
     def __initialize_datadog(self, api_key, app_key):
-        options = {
-            'api_key': api_key,
-            'app_key': app_key
-        }
-        initialize(**options)
+        try:
+            options = {
+                'api_key': api_key,
+                'app_key': app_key
+            }
+            initialize(**options)
+        except Exception as e:
+            logging.error(e)
 
     def __init__(self, args, config):
         self.args = args
@@ -240,9 +243,10 @@ def deploy_monitors(args, config):
                     monitor_type_deployed = application_config.get('{}_deployed'.format(monitor_type), {}).get(monitor_subtype, None)
                     if monitor_type_deployed:
                         logging.info('Updating monitor: {}'.format(monitor_subtype))
+                        monitor_id = monitor_type_deployed.get('monitor_id')
                         cls(args,config).update_monitor(args.region, args.stage, application, 
                                                         default_configs, monitor_type, monitor_subtype, 
-                                                        monitor_type_configs.get(monitor_subtype))
+                                                        monitor_type_configs.get(monitor_subtype), monitor_id)
                     else:
                         logging.info('Creating monitor: {}'.format(monitor_subtype))
                         cls(args,config).create_monitor(args.region, args.stage, application, 

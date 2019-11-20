@@ -1,2 +1,5 @@
 system_monitors_configs_location: stage
+system_monitors_configs_deployed:
+  cpu.load.high:
+    monitor_id: 123
 default_configs_location: stage
