@@ -1,11 +1,5 @@
 ---
 name: High CPU load on application_name:{application_name} stage:{stage} {{{{host.name}}}} / {{{{host.ip}}}}
-tags:
-  - application_name:{application_name}
-  - stage:{stage}
-  - region:{region}
-type: metric alert
-query: avg(last_5m):avg:system.load.norm.5{{application_name:{application_name},stage:{stage}}} by {{host}} > {critical_threshold}
 message: >-2
   High CPU load on application_name:{application_name} stage:{stage} {{{{host.name}}}} / {{{{host.ip}}}} for 5 consecutive minutes on this node.
   Url: https://app.datadoghq.com/monitors/{monitor_id}
@@ -25,3 +19,9 @@ monitor_options:
   thresholds:
     critical: {critical_threshold}
     warning: {warning_threshold}
+query: avg(last_5m):avg:system.load.norm.5{{application_name:{application_name},stage:{stage}}} by {{host}} > {critical_threshold}
+tags:
+  - application_name:{application_name}
+  - stage:{stage}
+  - region:{region}
+type: metric alert

@@ -9,28 +9,62 @@ import sys
 import toml
 import yaml
 from datetime import date, datetime, timedelta
+from datadog import initialize, api
 
 class Monitors:
     def __load_datadog_credentials(self):
         try:
-            with open('datadog.credentials') as file:
-                creds = file.read()
+            with open('datadog.creds.yaml') as file:
+                creds = yaml.safe_load(file)
             return (True, creds)
         except Exception as e:
             logging.error(e)
             return (False, '')
 
+    def __initialize_datadog(self, api_key, app_key):
+        options = {
+            'api_key': api_key,
+            'app_key': app_key
+        }
+        initialize(**options)
+
     def __init__(self, args, config):
         self.args = args
         self.config = config
         credentials_maybe = self.__load_datadog_credentials()
+        
         if credentials_maybe[0]:
-            self.datadog_credentials = credentials_maybe[1]
+            self.__initialize_datadog(
+                credentials_maybe[1].get('api_key'), 
+                credentials_maybe[1].get('app_key'))
         else:
             logging.error('Datadog credentials cannot be loaded')
             exit(1)
         logging.debug('Args: %s Config: %s', args, config)
     
+    def datadog_api_monitor_create(self, monitor_config_tuple):
+        response = api.Monitor.create(
+            name    =monitor_config_tuple[0],
+            message =monitor_config_tuple[1],
+            options =monitor_config_tuple[2],
+            query   =monitor_config_tuple[3],
+            tags    =monitor_config_tuple[4],
+            type    =monitor_config_tuple[5]
+        )
+        return response
+
+    def datadog_api_monitor_update(self, monitor_config_tuple, monitor_id):
+        response = api.Monitor.create(
+            monitor_id,
+            name    =monitor_config_tuple[0],
+            message =monitor_config_tuple[1],
+            options =monitor_config_tuple[2],
+            query   =monitor_config_tuple[3],
+            tags    =monitor_config_tuple[4],
+            type    =monitor_config_tuple[5]
+        )
+        return response
+
     def __render_template(self):
         pass
 
@@ -41,7 +75,8 @@ class Monitors:
         pass
 
 class SystemMonitors(Monitors):
-    def __render_template(self, region, stage, application_name, default_configs, monitor_type, monitor_subtype, monitor_type_config, monitor_id="empty"):
+    def __render_template(self, region, stage, application_name, default_configs, monitor_type, 
+                            monitor_subtype, monitor_type_config, monitor_id="empty"):
         try:
             file_name = os.path.join('templates', monitor_type, '{}.yaml'.format(monitor_subtype))
             with open(file_name) as file:
@@ -55,24 +90,50 @@ class SystemMonitors(Monitors):
                 critical_threshold=monitor_type_config.get('critical_threshold'),
                 monitor_id=monitor_id
             )
-            return (True, template_rendered)
+            monitor_config = yaml.safe_load(template_rendered)
+            return (True, (monitor_config.get('name'),
+                            monitor_config.get('message'),
+                            monitor_config.get('monitor_options'),
+                            monitor_config.get('query'),
+                            monitor_config.get('tags'),
+                            monitor_config.get('type')))
         except Exception as e:
             logging.error('Cannot load file: {} because of {}'.format(file_name, e))
             return (False, '')
 
-    def create_monitor(self, region, stage, application_name, default_configs, monitor_type, monitor_subtype, monitor_type_config):
-        self.__render_template(region, stage, application_name, default_configs, monitor_type, monitor_subtype,  monitor_type_config)
+    def create_monitor(self, region, stage, application_name, default_configs, 
+                        monitor_type, monitor_subtype, monitor_type_config):
         logging.info(monitor_type_config, default_configs)
+        monitor_config_maybe = self.__render_template(region, stage, application_name, 
+                                                        default_configs, monitor_type, 
+                                                        monitor_subtype,  monitor_type_config)
+        
+        if monitor_config_maybe[0]:
+            logging.info(monitor_config_maybe[1])
+            super().datadog_api_monitor_create(monitor_config_maybe[1])
+        else:
+            logging.error('!!')
     
-    def update_monitor(self, region, stage, application_name, default_configs, monitor_type, monitor_subtype, monitor_type_config, monitor_id):
-        self.__render_template(region, stage, application_name, default_configs, monitor_type, monitor_subtype,  monitor_type_config, monitor_id)
+    def update_monitor(self, region, stage, application_name, default_configs, 
+                        monitor_type, monitor_subtype, monitor_type_config, monitor_id):
         logging.info(monitor_type_config, default_configs)
+        monitor_config_maybe = self.__render_template(region, stage, application_name, 
+                                                        default_configs, monitor_type, 
+                                                        monitor_subtype,  monitor_type_config)
+        if monitor_config_maybe[0]:
+            logging.info(monitor_config_maybe[1])
+
+        else:
+            logging.error('!!')                     
+        
 
 class AwsElbMonitors(Monitors):
-    def create_monitor(self, region, stage, application_name, default_configs, monitor_type, monitor_subtype, monitor_type_config):
+    def create_monitor(self, region, stage, application_name, default_configs, 
+                        monitor_type, monitor_subtype, monitor_type_config):
         logging.info(monitor_type_config, default_configs)
 
-    def update_monitor(self, region, stage, application_name, default_configs, monitor_type, monitor_subtype, monitor_type_config):
+    def update_monitor(self, region, stage, application_name, default_configs, 
+                        monitor_type, monitor_subtype, monitor_type_config):
         logging.info(monitor_type_config, default_configs)
 
 #############################################################################
@@ -156,7 +217,9 @@ def deploy_monitors(args, config):
             logging.info('{} {} {} {}'.format(args.region, args.stage, application, monitor_type))
             monitor_type_configs_location_maybe = application_config.get('{}_configs_location'.format(monitor_type), None)
             if monitor_type_configs_location_maybe:
-                logging.info('Region: {} Stage: {} App: {} Type: {}  Location: {}'.format(args.region, args.stage, application, monitor_type, monitor_type_configs_location_maybe))
+                logging.info('Region: {} Stage: {} App: {} Type: {}  Location: {}'.format(args.region, args.stage, 
+                                                                                            application, monitor_type, 
+                                                                                            monitor_type_configs_location_maybe))
                 if monitor_type_configs_location_maybe == 'region':
                     monitor_type_configs = region_config.get('{}_configs'.format(monitor_type), None)
                 elif monitor_type_configs_location_maybe == 'stage':
@@ -177,10 +240,14 @@ def deploy_monitors(args, config):
                     monitor_type_deployed = application_config.get('{}_deployed'.format(monitor_type), {}).get(monitor_subtype, None)
                     if monitor_type_deployed:
                         logging.info('Updating monitor: {}'.format(monitor_subtype))
-                        cls(args,config).update_monitor(args.region, args.stage, application, default_configs, monitor_type, monitor_subtype, monitor_type_configs.get(monitor_subtype))
+                        cls(args,config).update_monitor(args.region, args.stage, application, 
+                                                        default_configs, monitor_type, monitor_subtype, 
+                                                        monitor_type_configs.get(monitor_subtype))
                     else:
                         logging.info('Creating monitor: {}'.format(monitor_subtype))
-                        cls(args,config).create_monitor(args.region, args.stage, application, default_configs, monitor_type, monitor_subtype, monitor_type_configs.get(monitor_subtype))
+                        cls(args,config).create_monitor(args.region, args.stage, application, 
+                                                        default_configs, monitor_type, monitor_subtype, 
+                                                        monitor_type_configs.get(monitor_subtype))
             else:
                 logging.error('Cannot find class for monitor type: {}'.format(monitor_type))
 
@@ -253,7 +320,7 @@ def main():
         exit(0)
     except Exception as e:
         logging.error('Exception caught in main')
-        logging.error('Exception caught: %s', e)
+        logging.exception('Exception caught: %s', e)
         exit(1)
     finally:
         logging.info("Quitting...")
