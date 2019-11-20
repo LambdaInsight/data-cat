@@ -1,10 +1,11 @@
 ---
-system_monitors_location: 'stage'
-system_monitors_config:
+system_monitors_configs_location: 'stage'
+system_monitors_deployed:
 
-aws_elb_monitors_location: 'application'
-aws_elb_monitors: 
+aws_elb_monitors_configs_location: 'application'
+aws_elb_monitors_list: 
   - test
 aws_elb_monitors_configs: 
   test:
     a: 1
+aws_elb_monitors_deployed:

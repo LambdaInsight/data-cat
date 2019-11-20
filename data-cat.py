@@ -108,21 +108,32 @@ def deploy_monitors(args, config):
         else:
             logging.error('Could not load application.yaml')
             break
-        for monitor in monitor_types_to_be_deployed:
-            logging.info('{} {} {} {}'.format(args.region, args.stage, application, monitor))
-            monitor_config_location_maybe = application_config.get(monitor, None)
-            if monitor_config_location_maybe:
-                logging.info(monitor_config_location_maybe)
-                if monitor_config_location_maybe == 'region':
-                    region_config.get(monitor, None)
-                elif monitor_config_location_maybe == 'stage':
-                    stage_config.get(monitor, None)
-                elif monitor_config_location_maybe == 'application':
-                    application_config.get(monitor, None)
+        for monitor_type in monitor_types_to_be_deployed:
+            logging.info('{} {} {} {}'.format(args.region, args.stage, application, monitor_type))
+            monitor_type_configs_location_maybe = application_config.get('{}_configs_location'.format(monitor_type), None)
+            if monitor_type_configs_location_maybe:
+                logging.info(monitor_type_configs_location_maybe)
+                if monitor_type_configs_location_maybe == 'region':
+                    monitor_type_configs = region_config.get('{}_configs'.format(monitor_type), None)
+                elif monitor_type_configs_location_maybe == 'stage':
+                    monitor_type_configs = stage_config.get('{}_configs'.format(monitor_type), None)
+                elif monitor_type_configs_location_maybe == 'application':
+                    monitor_type_configs = application_config.get('{}_configs'.format(monitor_type), None)
+                else:
+                    logging.error('Monitoring config {} cannot be found'.format(monitor_type))
+                    break
             else:
-                logging.error('Monitoring config {} cannot be found'.format(monitor))
-            # cls = str_to_class(monitor)
-            # cls(args,config).create_monitor()
+                logging.error('Monitoring config {} cannot be found'.format(monitor_type))
+                break
+            
+            logging.info(monitor_type_configs)
+            
+            monitor_type_class = monitor_types.get(monitor_type, None)
+            if monitor_type_class:
+                cls = str_to_class(monitor_type_class)
+                cls(args,config).create_monitor()
+            else:
+                logging.error('Cannot find class for monitor type: {}'.format(monitor_type))
 
 
 def deploy_dashboards(args, config):

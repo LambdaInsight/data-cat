@@ -1,7 +1,1 @@
 ---
-system_monitors:
-  - cpu.load.high
-system_monitors_config:
-  cpu.load.high:
-aws_elb_monitors:
-  - test

@@ -1,9 +1,7 @@
 ---
-system_monitors:
+system_monitors_list: 
   - cpu.load.high
-
-system_monitors_config:
+system_monitors_configs: 
   cpu.load.high:
-
-aws_elb_monitors:
-  - test
+    critical_threshold: 0.8
+    warning_threshold: 0.8
