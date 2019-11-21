@@ -124,9 +124,10 @@ class SystemMonitors(Monitors):
 
         if monitor_config_maybe[0]:
             logging.info(monitor_config_maybe[1])
-            super().datadog_api_monitor_create(monitor_config_maybe[1])
+            return super().datadog_api_monitor_create(monitor_config_maybe[1])
         else:
-            logging.error('!!')
+            logging.error('Rendering template was not successful for {} {}'.format(monitor_type, monitor_subtype))
+            return {'error': 'error'}
 
     def update_monitor(self, region, stage, application_name, default_configs,
                         monitor_type, monitor_subtype, monitor_type_config, monitor_id):
@@ -135,10 +136,10 @@ class SystemMonitors(Monitors):
                                                         default_configs, monitor_type,
                                                         monitor_subtype,  monitor_type_config)
         if monitor_config_maybe[0]:
-            logging.info(monitor_config_maybe[1])
-
+            return super().datadog_api_monitor_update(monitor_config_maybe[1], monitor_id)
         else:
-            logging.error('!!')
+            logging.error('Rendering template was not successful for {} {}'.format(monitor_type, monitor_subtype))
+            return {'error': 'error'}
 
 
 class AwsElbMonitors(Monitors):
@@ -263,6 +264,9 @@ def deploy_monitors(args, config):
                         cls(args,config).create_monitor(args.region, args.stage, application,
                                                         default_configs, monitor_type, monitor_subtype,
                                                         monitor_type_configs.get(monitor_subtype))
+                        # updating_deployed
+                        monitors_deployed = '{}_deployed'.format(monitor_type)
+                        application_config[monitors_deployed][monitor_subtype] = 'x'
             else:
                 logging.error('Cannot find class for monitor type: {}'.format(monitor_type))
 
