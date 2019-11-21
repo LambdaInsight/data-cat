@@ -50,34 +50,44 @@ class Monitors:
         logging.debug('Args: %s Config: %s', args, config)
 
     def datadog_api_monitor_create(self, monitor_config_tuple):
-        if self.datadog_mock == True:
-            logging.info('Mocking the monitor creation')
-            return {'mock': 'mock'}
-        else:
-            response = api.Monitor.create(
-                name    = monitor_config_tuple[0],
-                message = monitor_config_tuple[1],
-                options = monitor_config_tuple[2],
-                query   = monitor_config_tuple[3],
-                tags    = monitor_config_tuple[4],
-                type    = monitor_config_tuple[5]
-            )
-            return response
+        try:
+            if self.datadog_mock == True:
+                logging.info('Mocking the monitor creation')
+                return (True, {'mock': 'mock'})
+            else:
+                response = api.Monitor.create(
+                    name    = monitor_config_tuple[0],
+                    message = monitor_config_tuple[1],
+                    options = monitor_config_tuple[2],
+                    query   = monitor_config_tuple[3],
+                    tags    = monitor_config_tuple[4],
+                    type    = monitor_config_tuple[5]
+                )
+                return (True, response)
+        except Exception as e:
+            logging.error(e)
+            return (False, str(e))
+
     def datadog_api_monitor_update(self, monitor_config_tuple, monitor_id):
-        if self.datadog_mock == True:
-            logging.info('Mocking the monitor creation')
-            return {'mock': 'mock'}
-        else:
-            response = api.Monitor.create(
-                monitor_id,
-                name    = monitor_config_tuple[0],
-                message = monitor_config_tuple[1],
-                options = monitor_config_tuple[2],
-                query   = monitor_config_tuple[3],
-                tags    = monitor_config_tuple[4],
-                type    = monitor_config_tuple[5]
-            )
-            return response
+        try:
+            if self.datadog_mock == True:
+                logging.info('Mocking the monitor creation')
+                return (True, {'mock': 'mock'})
+            else:
+                response = api.Monitor.create(
+                    monitor_id,
+                    name    = monitor_config_tuple[0],
+                    message = monitor_config_tuple[1],
+                    options = monitor_config_tuple[2],
+                    query   = monitor_config_tuple[3],
+                    tags    = monitor_config_tuple[4],
+                    type    = monitor_config_tuple[5]
+                )
+                return (True, response)
+        except Exception as e:
+            logging.error(e)
+            return (False, str(e))
+
 
     def __render_template(self):
         pass
@@ -113,7 +123,7 @@ class SystemMonitors(Monitors):
                             monitor_config.get('type')))
         except Exception as e:
             logging.error('Cannot load file: {} because of {}'.format(file_name, e))
-            return (False, '')
+            return (False, str(e))
 
     def create_monitor(self, region, stage, application_name, default_configs,
                         monitor_type, monitor_subtype, monitor_type_config):
@@ -124,10 +134,15 @@ class SystemMonitors(Monitors):
 
         if monitor_config_maybe[0]:
             logging.info(monitor_config_maybe[1])
-            return super().datadog_api_monitor_create(monitor_config_maybe[1])
+            datadog_api_response = super().datadog_api_monitor_create(monitor_config_maybe[1])
+            if datadog_api_response[0]:
+                return (True, datadog_api_response[1])
+            else:
+                return (False, datadog_api_response[1])
         else:
-            logging.error('Rendering template was not successful for {} {}'.format(monitor_type, monitor_subtype))
-            return {'error': 'error'}
+            logging.error('Rendering template was not successful for {} {}'.format(
+                monitor_type, monitor_subtype))
+            return (False, {'error': monitor_config_maybe[1]})
 
     def update_monitor(self, region, stage, application_name, default_configs,
                         monitor_type, monitor_subtype, monitor_type_config, monitor_id):
@@ -136,11 +151,16 @@ class SystemMonitors(Monitors):
                                                         default_configs, monitor_type,
                                                         monitor_subtype,  monitor_type_config)
         if monitor_config_maybe[0]:
-            return super().datadog_api_monitor_update(monitor_config_maybe[1], monitor_id)
+            logging.info(monitor_config_maybe[1])
+            datadog_api_response = super().datadog_api_monitor_update(monitor_config_maybe[1], monitor_id)
+            if datadog_api_response[0]:
+                return (True, datadog_api_response[1])
+            else:
+                return (False, datadog_api_response[1])
         else:
-            logging.error('Rendering template was not successful for {} {}'.format(monitor_type, monitor_subtype))
-            return {'error': 'error'}
-
+            logging.error('Rendering template was not successful for {} {}'.format(
+                monitor_type, monitor_subtype))
+            return (False, {'error': monitor_config_maybe[1]})
 
 class AwsElbMonitors(Monitors):
     def create_monitor(self, region, stage, application_name, default_configs,
@@ -157,12 +177,21 @@ class AwsElbMonitors(Monitors):
 
 def safe_load_yaml(file_name):
     try:
-        with open(file_name) as file:
+        with open(file_name, 'r') as file:
             data = yaml.safe_load(file)
         return (True, data)
     except Exception as e:
         logging.error('Cannot load file: {} because of {}'.format(file_name, e))
         return (False, '')
+
+def save_application_yaml(file_name, dict):
+    try:
+        with open(file_name, 'w') as file:
+            file.write(yaml.safe_dump(dict))
+        return True
+    except Exception as e:
+        logging.error('Cannot write file: {} because of {}'.format(file_name, e))
+        return False
 
 def str_to_class(classname):
     return getattr(sys.modules[__name__], classname)
@@ -251,25 +280,28 @@ def deploy_monitors(args, config):
             monitor_type_class = monitor_types.get(monitor_type, None)
             if monitor_type_class:
                 cls = str_to_class(monitor_type_class)
+                monitors_instance = cls(args,config)
                 for monitor_subtype in monitor_type_configs:
-                    monitor_type_deployed = application_config.get('{}_deployed'.format(monitor_type), {}).get(monitor_subtype, None)
+                    monitor_type_deployed = application_config.get('{}_configs_deployed'.format(monitor_type), {}).get(monitor_subtype, None)
                     if monitor_type_deployed:
                         logging.info('Updating monitor: {}'.format(monitor_subtype))
                         monitor_id = monitor_type_deployed.get('monitor_id')
-                        cls(args,config).update_monitor(args.region, args.stage, application,
+                        datadog_api_reponse = monitors_instance.update_monitor(args.region, args.stage, application,
                                                         default_configs, monitor_type, monitor_subtype,
                                                         monitor_type_configs.get(monitor_subtype), monitor_id)
                     else:
                         logging.info('Creating monitor: {}'.format(monitor_subtype))
-                        cls(args,config).create_monitor(args.region, args.stage, application,
+                        datadog_api_reponse = monitors_instance.create_monitor(args.region, args.stage, application,
                                                         default_configs, monitor_type, monitor_subtype,
                                                         monitor_type_configs.get(monitor_subtype))
                         # updating_deployed
-                        monitors_deployed = '{}_deployed'.format(monitor_type)
-                        application_config[monitors_deployed][monitor_subtype] = 'x'
+                        monitors_type_deployed = '{}_configs_deployed'.format(monitor_type)
+                        application_config.setdefault(monitors_type_deployed,{})
+                        application_config[monitors_type_deployed].setdefault(monitor_subtype,datadog_api_reponse)
             else:
                 logging.error('Cannot find class for monitor type: {}'.format(monitor_type))
-
+            #save application.yaml
+            save_application_yaml(application_path, application_config)
 
 def deploy_dashboards(args, config):
     pass
