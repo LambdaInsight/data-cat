@@ -301,7 +301,11 @@ def deploy_monitors(args, config):
             else:
                 logging.error('Cannot find class for monitor type: {}'.format(monitor_type))
             #save application.yaml
-            save_application_yaml(application_path, application_config)
+            application_yaml_saved = save_application_yaml(application_path, application_config)
+            if application_yaml_saved:
+                logging.info('application.yaml is successfully saved')
+            else:
+                logging.error('application.yaml was NOT successfully saved')
 
 def deploy_dashboards(args, config):
     pass

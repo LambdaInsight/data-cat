@@ -1,2 +1,6 @@
-system_monitors_configs_location: stage
 default_configs_location: stage
+system_monitors_configs_deployed:
+  cpu.load.high:
+  - true
+  - mock: mock
+system_monitors_configs_location: stage
