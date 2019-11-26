@@ -88,17 +88,6 @@ class Monitors:
             logging.error(e)
             return (False, str(e))
 
-
-    def __render_template(self):
-        pass
-
-    def create_monitor(self):
-        pass
-
-    def update_monitor(self):
-        pass
-
-class SystemMonitors(Monitors):
     def __render_template(self, region, stage, application_name, default_configs, monitor_type,
                             monitor_subtype, monitor_type_config, monitor_id="empty"):
         try:
@@ -134,7 +123,7 @@ class SystemMonitors(Monitors):
 
         if monitor_config_maybe[0]:
             logging.info(monitor_config_maybe[1])
-            datadog_api_response = super().datadog_api_monitor_create(monitor_config_maybe[1])
+            datadog_api_response = self.datadog_api_monitor_create(monitor_config_maybe[1])
             if datadog_api_response[0]:
                 return (True, datadog_api_response[1])
             else:
@@ -152,7 +141,7 @@ class SystemMonitors(Monitors):
                                                         monitor_subtype,  monitor_type_config)
         if monitor_config_maybe[0]:
             logging.info(monitor_config_maybe[1])
-            datadog_api_response = super().datadog_api_monitor_update(monitor_config_maybe[1], monitor_id)
+            datadog_api_response = self.datadog_api_monitor_update(monitor_config_maybe[1], monitor_id)
             if datadog_api_response[0]:
                 return (True, datadog_api_response[1])
             else:
@@ -161,6 +150,17 @@ class SystemMonitors(Monitors):
             logging.error('Rendering template was not successful for {} {}'.format(
                 monitor_type, monitor_subtype))
             return (False, {'error': monitor_config_maybe[1]})
+
+class SystemMonitors(Monitors):
+    def create_monitor(self, region, stage, application_name, default_configs,
+                        monitor_type, monitor_subtype, monitor_type_config):
+        return super().create_monitor(region, stage, application_name, default_configs,
+                        monitor_type, monitor_subtype, monitor_type_config)
+
+    def update_monitor(self, region, stage, application_name, default_configs,
+                        monitor_type, monitor_subtype, monitor_type_config, monitor_id):
+        return super().update_monitor(region, stage, application_name, default_configs,
+                        monitor_type, monitor_subtype, monitor_type_config, monitor_id)
 
 class AwsElbMonitors(Monitors):
     def create_monitor(self, region, stage, application_name, default_configs,
@@ -294,10 +294,29 @@ def deploy_monitors(args, config):
                         datadog_api_reponse = monitors_instance.create_monitor(args.region, args.stage, application,
                                                         default_configs, monitor_type, monitor_subtype,
                                                         monitor_type_configs.get(monitor_subtype))
-                        # updating_deployed
-                        monitors_type_deployed = '{}_configs_deployed'.format(monitor_type)
-                        application_config.setdefault(monitors_type_deployed,{})
-                        application_config[monitors_type_deployed].setdefault(monitor_subtype,datadog_api_reponse)
+                    # Updating the monitor specific part of application.yaml
+                    if datadog_api_reponse[0]:
+                        if datadog_api_reponse[1].get('errors', False):
+                            logging.error('Error happened while talking to the DataDog API')
+                            logging.error(datadog_api_reponse[1].get('errors'))
+                        else:
+                            logging.info('Talking to the DataDog API was successful')
+                            monitors_type_deployed = '{}_configs_deployed'.format(monitor_type)
+                            application_config.setdefault(monitors_type_deployed,{})
+                            monitor_id          = datadog_api_reponse[1].get('id', 123)
+                            monitor_org_id      = datadog_api_reponse[1].get('org_id', 0)
+                            monitor_creator     = datadog_api_reponse[1].get('creator', {})
+                            monitor_created_at  = datadog_api_reponse[1].get('created', '2019-11-25T09:00:00Z')
+                            monitor_updated_at  = datadog_api_reponse[1].get('modified', '2019-11-26T09:00:00Z')
+                            configs_deployed    = {
+                                'monitor_id': monitor_id, 'monitor_org_id': monitor_org_id,
+                                'monitor_creator': monitor_creator, 'monitor_created_at': monitor_created_at,
+                                'monitor_updated_at': monitor_updated_at
+                            }
+                            application_config[monitors_type_deployed].setdefault(monitor_subtype,configs_deployed)
+                            application_config[monitors_type_deployed][monitor_subtype] = configs_deployed
+                    else:
+                        logging.error(datadog_api_reponse[1])
             else:
                 logging.error('Cannot find class for monitor type: {}'.format(monitor_type))
             #save application.yaml
