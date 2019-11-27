@@ -308,7 +308,7 @@ def deploy_monitors(args, config):
                             application_config.setdefault(monitors_type_deployed,{})
                             monitor_id          = datadog_api_reponse[1].get('id', 123)
                             monitor_org_id      = datadog_api_reponse[1].get('org_id', 0)
-                            monitor_creator     = datadog_api_reponse[1].get('creator', {})
+                            monitor_creator     = datadog_api_reponse[1].get('creator', application_config.get(monitors_type_deployed, {}).get(monitor_subtype, {}).get('monitor_creator', {}))
                             monitor_created_at  = datadog_api_reponse[1].get('created', '2019-11-25T09:00:00Z')
                             monitor_updated_at  = datadog_api_reponse[1].get('modified', '2019-11-26T09:00:00Z')
                             configs_deployed    = {
