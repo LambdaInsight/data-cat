@@ -7,7 +7,7 @@ let keyValue =
 
 let Prelude = https://prelude.dhall-lang.org/v11.1.0/package.dhall
 
-let ApplicationConfig : Type = { created_at : Text } 
+let ApplicationConfig : Type = { created_at : Text, updated_at: Text }
 
 let Application = < etcd | postgresql | hadoop >
 let Applications = Prelude.Map.Type Application ApplicationConfig
@@ -23,33 +23,33 @@ let awsRegion = keyValue AwsRegion Stages
 
 in  [ awsRegion AwsRegion.us-east-1
         [ stage Stage.dev
-             [ application Application.hadoop { created_at = "2019-11-04T09:00:00Z" } 
-             , application Application.etcd { created_at = "2019-11-04T09:00:00Z" } 
+             [ application Application.hadoop { created_at = "2019-11-04T09:00:00Z", updated_at = "2019-11-26T09:00:00Z" }
+             , application Application.etcd { created_at = "2019-11-04T09:00:00Z", updated_at = "2019-11-26T09:00:00Z" }
              ]
         , stage Stage.qa
-             [ application Application.hadoop { created_at = "2019-11-04T09:00:00Z" } 
-             , application Application.etcd { created_at = "2019-11-04T09:00:00Z" } 
+             [ application Application.hadoop { created_at = "2019-11-04T09:00:00Z", updated_at = "2019-11-26T09:00:00Z" }
+             , application Application.etcd { created_at = "2019-11-04T09:00:00Z", updated_at = "2019-11-26T09:00:00Z" }
              ]
         ]
-        
+
     , awsRegion AwsRegion.eu-west-1
         [ stage Stage.dev
-             [ application Application.hadoop { created_at = "2019-11-04T09:00:00Z" } 
-             , application Application.etcd { created_at = "2019-11-04T09:00:00Z" } 
+             [ application Application.hadoop { created_at = "2019-11-04T09:00:00Z", updated_at = "2019-11-26T09:00:00Z" }
+             , application Application.etcd { created_at = "2019-11-04T09:00:00Z", updated_at = "2019-11-26T09:00:00Z" }
              ]
         , stage Stage.qa
-             [ application Application.hadoop { created_at = "2019-11-04T09:00:00Z" } 
-             , application Application.etcd { created_at = "2019-11-04T09:00:00Z" } 
+             [ application Application.hadoop { created_at = "2019-11-04T09:00:00Z", updated_at = "2019-11-26T09:00:00Z" }
+             , application Application.etcd { created_at = "2019-11-04T09:00:00Z", updated_at = "2019-11-26T09:00:00Z" }
              ]
         , stage Stage.prod
-             [ application Application.hadoop { created_at = "2019-11-04T09:00:00Z" } 
-             , application Application.etcd { created_at = "2019-11-04T09:00:00Z" } 
+             [ application Application.hadoop { created_at = "2019-11-04T09:00:00Z", updated_at = "2019-11-26T09:00:00Z" }
+             , application Application.etcd { created_at = "2019-11-04T09:00:00Z", updated_at = "2019-11-26T09:00:00Z" }
              ]
         ]
     , awsRegion AwsRegion.eu-central-1
         [ stage Stage.dev
-            [ application Application.hadoop { created_at = "2019-11-04T09:00:00Z" } 
-            , application Application.etcd { created_at = "2019-11-04T09:00:00Z" } 
+            [ application Application.hadoop { created_at = "2019-11-04T09:00:00Z", updated_at = "2019-11-26T09:00:00Z" }
+            , application Application.etcd { created_at = "2019-11-04T09:00:00Z", updated_at = "2019-11-26T09:00:00Z" }
             ]
         ]
     ]

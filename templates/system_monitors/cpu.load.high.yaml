@@ -24,4 +24,6 @@ tags:
   - application_name:{application_name}
   - stage:{stage}
   - region:{region}
+  - monitor_type:{monitor_type}
+  - monitor_subtype:{monitor_subtype}
 type: metric alert

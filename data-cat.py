@@ -11,6 +11,10 @@ import yaml
 from datetime import date, datetime, timedelta
 from datadog import initialize, api
 
+class MonitorDefault(dict):
+    def __missing__(self, key):
+        return key
+
 class Monitors:
     def __load_datadog_credentials(self):
         try:
@@ -89,20 +93,19 @@ class Monitors:
             return (False, str(e))
 
     def __render_template(self, region, stage, application_name, default_configs, monitor_type,
-                            monitor_subtype, monitor_type_config, monitor_id="empty"):
+                            monitor_subtype, monitor_type_config, monitor_id='empty'):
         try:
             file_name = os.path.join('templates', monitor_type, '{}.yaml'.format(monitor_subtype))
             with open(file_name) as file:
                 data = file.read()
-            template_rendered = data.format(
-                region=region,
-                stage=stage,
-                application_name=application_name,
-                slack_notification_channel=default_configs.get('slack_notification_channel'),
-                warning_threshold=monitor_type_config.get('warning_threshold'),
-                critical_threshold=monitor_type_config.get('critical_threshold'),
-                monitor_id=monitor_id
-            )
+            template_variables = {
+                'region': region, 'stage': stage, 'application_name': application_name,
+                'slack_notification_channel': default_configs.get('slack_notification_channel'),
+                'warning_threshold': monitor_type_config.get('warning_threshold'),
+                'critical_threshold': monitor_type_config.get('critical_threshold'),
+                'monitor_type': monitor_type, 'monitor_subtype': monitor_subtype, 'monitor_id': monitor_id
+            }
+            template_rendered = data.format_map(MonitorDefault(template_variables))
             monitor_config = yaml.safe_load(template_rendered)
             return (True, (monitor_config.get('name'),
                             monitor_config.get('message'),
