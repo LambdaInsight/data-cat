@@ -4,3 +4,4 @@ logs/
 venv/
 datadog.creds.yaml
 .vagrant/
+prod.datadog.creds.yaml
